@@ -1,0 +1,825 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Campaign Performance Audit — {{ campaign.name }}</title>
+    <style>
+        /* ================================================================
+           SENTIMENTRI — EXECUTIVE CAMPAIGN AUDIT PDF STYLESHEET
+           ================================================================ */
+
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap");
+
+        @page {
+            size: A4;
+            margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#030303{% else %}#ffffff{% endif %};
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: {% if campaign.workspace.report_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif campaign.workspace.report_font_style == 'SERIF' %}'Playfair Display', serif{% elif campaign.workspace.report_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 7.5pt;
+                color: {% if campaign.workspace.report_theme == 'DARK' %}#71717a{% else %}#94a3b8{% endif %};
+            }
+            @bottom-left {
+                content: {% if campaign.workspace.report_show_watermark %}"Sentimentri Intelligence Report • Confidential"{% else %}""{% endif %};
+                font-family: {% if campaign.workspace.report_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif campaign.workspace.report_font_style == 'SERIF' %}'Playfair Display', serif{% elif campaign.workspace.report_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 7.5pt;
+                color: {% if campaign.workspace.report_theme == 'DARK' %}#71717a{% else %}#94a3b8{% endif %};
+            }
+            {% if campaign.workspace.report_show_watermark %}
+            @top-right {
+                content: "CONFIDENTIAL";
+                font-family: {% if campaign.workspace.report_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif campaign.workspace.report_font_style == 'SERIF' %}'Playfair Display', serif{% elif campaign.workspace.report_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 6.5pt;
+                font-weight: bold;
+                letter-spacing: 1.5px;
+                color: {% if campaign.workspace.report_theme == 'DARK' %}#3f3f46{% else %}#cbd5e1{% endif %};
+            }
+            {% endif %}
+        }
+
+        @page :first {
+            @bottom-right { content: none; }
+            @bottom-left { content: none; }
+            @top-right { content: none; }
+        }
+
+        /* --- Base Typography --- */
+        body {
+            font-family: {% if campaign.workspace.report_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif campaign.workspace.report_font_style == 'SERIF' %}'Playfair Display', serif{% elif campaign.workspace.report_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#f4f4f5{% else %}#1e293b{% endif %};
+            line-height: 1.5;
+            font-size: 9pt;
+            margin: 0;
+            padding: 0;
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#030303{% else %}#ffffff{% endif %};
+        }
+        h1, h2, h3, h4 {
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %};
+            margin-top: 0;
+            line-height: 1.2;
+        }
+        p { margin-bottom: 6px; }
+        strong { font-weight: 700; }
+
+        /* --- Utility Classes --- */
+        .clear { clear: both; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-muted { color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#64748b{% endif %}; }
+        .text-sm { font-size: 8pt; }
+        .text-xs { font-size: 7pt; }
+        .mt-0 { margin-top: 0; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-sm { margin-bottom: 6px; }
+        .mb-md { margin-bottom: 12px; }
+        .page-block { page-break-inside: avoid; margin-bottom: 20px; }
+        .page-break { page-break-before: always; }
+
+        /* ================================================================
+           HEADER / BANNER
+           ================================================================ */
+        .report-header {
+            border-bottom: 3px solid {{ campaign.workspace.report_primary_color }};
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header-logo {
+            font-size: 24pt;
+            font-weight: 800;
+            color: {{ campaign.workspace.report_primary_color }};
+            letter-spacing: -0.5px;
+            display: inline-block;
+        }
+        .header-tagline {
+            font-size: 8.5pt;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#64748b{% endif %};
+            margin-top: 2px;
+        }
+        .header-meta {
+            float: right;
+            text-align: right;
+            font-size: 8.5pt;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#e4e4e7{% else %}#475569{% endif %};
+        }
+        .header-meta-label {
+            font-weight: 700;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#71717a{% else %}#94a3b8{% endif %};
+            font-size: 7.5pt;
+            text-transform: uppercase;
+        }
+
+        /* ================================================================
+           SECTION HEADERS
+           ================================================================ */
+        .section-header {
+            font-size: 13pt;
+            font-weight: 800;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %};
+            border-left: 4px solid {{ campaign.workspace.report_primary_color }};
+            padding-left: 10px;
+            margin-top: 25px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section-subtitle {
+            font-size: 9pt;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#64748b{% endif %};
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        /* ================================================================
+           KPI METRIC CARDS
+           ================================================================ */
+        .kpi-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 12px;
+            margin-left: -12px;
+            margin-right: -12px;
+            margin-bottom: 10px;
+        }
+        .kpi-card {
+            background: {% if campaign.workspace.report_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %};
+            border: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .kpi-label {
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#64748b{% endif %};
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .kpi-value {
+            font-size: 18pt;
+            font-weight: 800;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %};
+            margin-top: 4px;
+            margin-bottom: 2px;
+        }
+        .kpi-sub {
+            color: {{ campaign.workspace.report_primary_color }};
+            font-size: 7.5pt;
+            font-weight: 500;
+        }
+
+        /* ================================================================
+           INSIGHT BOX
+           ================================================================ */
+        .section-insight {
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %};
+            border-left: 4px solid {{ campaign.workspace.report_primary_color }};
+            border-right: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-top: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-bottom: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .insight-label {
+            font-size: 7.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: {{ campaign.workspace.report_primary_color }};
+            margin-bottom: 3px;
+        }
+        .insight-text {
+            font-size: 8.5pt;
+            margin: 0;
+            line-height: 1.4;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};
+        }
+
+        /* ================================================================
+           TABLES
+           ================================================================ */
+        .table-container {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+        }
+        .table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 6.2pt;
+            text-align: left;
+        }
+        .table th {
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#18181b{% else %}#f1f5f9{% endif %};
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#475569{% endif %};
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 5px 2px;
+            font-size: 5.8pt;
+            letter-spacing: 0.1px;
+            border-bottom: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .table td {
+            padding: 5px 2px;
+            border-bottom: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};
+            font-size: 6.2pt;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        .table tr:nth-child(even) td {
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#09090b{% else %}#f8fafc{% endif %};
+        }
+
+        /* ================================================================
+           CHARTS
+           ================================================================ */
+        .chart-box {
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %};
+            border: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .chart-img {
+            max-width: 100%;
+            height: auto;
+            max-height: 250px;
+        }
+        .chart-caption {
+            font-size: 7.5pt;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#a1a1aa{% else %}#64748b{% endif %};
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* ================================================================
+           COLUMNS
+           ================================================================ */
+        .two-col {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .col-left {
+            width: 48%;
+            float: left;
+        }
+        .col-right {
+            width: 48%;
+            float: right;
+        }
+
+        /* ================================================================
+           COMMENTS & CARDS
+           ================================================================ */
+        .opinion-card {
+            background-color: {% if campaign.workspace.report_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %};
+            border: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .opinion-title {
+            font-size: 9pt;
+            font-weight: 700;
+            color: {{ campaign.workspace.report_primary_color }};
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .comment-card {
+            border-left: 3px solid {{ campaign.workspace.report_primary_color }};
+            padding-left: 8px;
+            margin-bottom: 10px;
+            font-size: 8pt;
+        }
+        .comment-card-pos {
+            border-left-color: #10b981;
+        }
+        .comment-card-neg {
+            border-left-color: #ef4444;
+        }
+        .comment-author {
+            font-weight: 600;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %};
+        }
+        .comment-text {
+            font-style: italic;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};
+            margin-top: 2px;
+        }
+
+        /* ================================================================
+           PLATFORM BADGES & CHIPS
+           ================================================================ */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 7pt;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .badge-ig { background-color: #fdf2f8; color: #db2777; }
+        .badge-tt { background-color: #ecfeff; color: #0891b2; }
+        .badge-x { background-color: #f8fafc; color: #0f172a; }
+        
+        .badge-pos { background-color: #d1fae5; color: #065f46; }
+        .badge-neg { background-color: #fee2e2; color: #991b1b; }
+        .badge-neu { background-color: #f1f5f9; color: #475569; }
+
+        .score-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .score-dot-green { background-color: #10b981; }
+        .score-dot-amber { background-color: #f59e0b; }
+        .score-dot-red { background-color: #ef4444; }
+
+        /* ================================================================
+           SIGNATURE / SIGN-OFF
+           ================================================================ */
+        .signature-block {
+            border-top: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};
+            padding-top: 15px;
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .methodology-note {
+            font-size: 7.5pt;
+            color: {% if campaign.workspace.report_theme == 'DARK' %}#71717a{% else %}#94a3b8{% endif %};
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====================================================================
+         REPORT COVER/HEADER
+         ==================================================================== -->
+    <div class="report-header">
+        <div class="header-meta">
+            <span class="header-meta-label">Client / Brand:</span> {{ campaign.brand.name }}<br>
+            <span class="header-meta-label">Workspace:</span> {{ campaign.workspace.name }}<br>
+            <span class="header-meta-label">Timeline:</span> {{ campaign.start_date|date:"M d, Y" }} – {{ campaign.end_date|date:"M d, Y" }} <span class="text-muted">({{ campaign_duration }} Days)</span><br>
+            <span class="header-meta-label">Date Generated:</span> {{ generated_at }}
+        </div>
+        <div class="header-logo">SENTIMETRI</div>
+        <div class="header-tagline">Campaign Intelligence & Sentiment Performance Audit</div>
+        <div class="clear"></div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 1: EXECUTIVE SUMMARY
+         ==================================================================== -->
+    <div class="page-block">
+        <div class="section-header">01 • Executive Performance Summary</div>
+        <div class="section-subtitle">High-level campaign reach, engagement, and audience resonance overview.</div>
+
+        <div style="font-size: 9.5pt; line-height: 1.5; margin-bottom: 15px; color: {% if campaign.workspace.report_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};">
+            {{ insight_executive_summary }}
+        </div>
+
+        <table class="kpi-grid">
+            <tr>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Total Posts</div>
+                    <div class="kpi-value">{{ total_posts }}</div>
+                    <div class="kpi-sub">tracked campaign uploads</div>
+                </td>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Organic Reach</div>
+                    <div class="kpi-value">{{ total_followers_fmt }}</div>
+                    <div class="kpi-sub">followers across roster</div>
+                </td>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Total Views</div>
+                    <div class="kpi-value">{{ total_views_fmt }}</div>
+                    <div class="kpi-sub">video impressions</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Engagement Rate</div>
+                    <div class="kpi-value">{{ engagement_rate_str }}</div>
+                    <div class="kpi-sub">resonance rate (CR)</div>
+                </td>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Audience Activeness</div>
+                    <div class="kpi-value">{{ audience_activeness_str }}</div>
+                    <div class="kpi-sub">views per follower ratio</div>
+                </td>
+                <td class="kpi-card" width="33%">
+                    <div class="kpi-label">Net Sentiment</div>
+                    <div class="kpi-value">{{ net_sentiment_str }}</div>
+                    <div class="kpi-sub">positive audience affinity</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Executive Insight</div>
+            <p class="insight-text">{{ insight_executive_summary }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 2: PLATFORM PERFORMANCE
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">02 • Platform Performance</div>
+        <div class="section-subtitle">This section provides a comparative breakdown of content performance and momentum across platforms during the campaign period. It details post volume, reach, and engagement metrics to evaluate platform-specific efficiency.</div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Platform</th>
+                        <th class="text-center" style="width: 7%;">Posts</th>
+                        <th class="text-right" style="width: 15%;">Views</th>
+                        <th class="text-right" style="width: 15%;">Engagement</th>
+                        <th class="text-right" style="width: 12%;">Likes</th>
+                        <th class="text-right" style="width: 11%;">Comments</th>
+                        <th class="text-right" style="width: 8%;">Saves</th>
+                        <th class="text-right" style="width: 8%;">Reposts</th>
+                        <th class="text-right" style="width: 9%;">Eng. Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in platform_data %}
+                    <tr>
+                        <td>
+                            {% if p.platform == 'IG' %}
+                                <span class="badge badge-ig">Instagram</span>
+                            {% elif p.platform == 'TT' %}
+                                <span class="badge badge-tt">TikTok</span>
+                            {% elif p.platform == 'X' %}
+                                <span class="badge badge-x">Twitter/X</span>
+                            {% else %}
+                                <span class="badge">{{ p.platform_name }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ p.posts_count }}</td>
+                        <td class="text-right">{{ p.views_fmt }}</td>
+                        <td class="text-right">{{ p.engagement_fmt }}</td>
+                        <td class="text-right">{{ p.likes_fmt }}</td>
+                        <td class="text-right">{{ p.comments_fmt }}</td>
+                        <td class="text-right">{{ p.saves_fmt }}</td>
+                        <td class="text-right">{{ p.retweets_fmt }}</td>
+                        <td class="text-right" style="font-weight: 700; color: {{ campaign.workspace.report_primary_color }};">{{ p.engagement_rate_str }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if charts.engagement_velocity %}
+        <div class="chart-box">
+            <img class="chart-img" src="data:image/png;base64,{{ charts.engagement_velocity }}" alt="Engagement Velocity Timeline">
+            <div class="chart-caption">Figure 1: Daily engagement volume fluctuations across platforms during the campaign period</div>
+        </div>
+        {% endif %}
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Platform Insight</div>
+            <p class="insight-text">{{ insight_platform_performance }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 3: SENTIMENT ANALYSIS
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">03 • Sentiment Analysis</div>
+        <div class="section-subtitle">This section analyzes the emotional response of the target audience through natural language processing (NLP) of audience comments. It computes the net sentiment and highlights the primary emotional themes driving audience reactions.</div>
+
+        <div class="two-col">
+            <div class="col-left" style="width: 45%;">
+                {% if charts.sentiment_donut %}
+                <div class="chart-box" style="margin-bottom: 0;">
+                    <img class="chart-img" src="data:image/png;base64,{{ charts.sentiment_donut }}" alt="Sentiment Donut Chart" style="max-height: 180px;">
+                    <div class="chart-caption">Figure 2: Distribution of audience comment sentiment</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-right" style="width: 50%;">
+                <div style="background-color: {% if campaign.workspace.report_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border: 1px solid {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %}; border-radius: 8px; padding: 15px; height: 170px;">
+                    <div class="kpi-label" style="text-align: center;">Net Sentiment Score</div>
+                    <div class="kpi-value" style="text-align: center; font-size: 26pt; color: #10b981; margin: 10px 0;">{{ net_sentiment_str }}</div>
+                    
+                    <div style="margin-top: 15px;">
+                        <table style="width: 100%; font-size: 7.5pt;">
+                            <tr>
+                                <td>Positive: <span style="font-weight: 700; color: #10b981;">{{ pos_pct_str }}</span></td>
+                                <td style="text-align: center;">Neutral: <span style="font-weight: 700; color: #64748b;">{{ neu_pct_str }}</span></td>
+                                <td style="text-align: right;">Negative: <span style="font-weight: 700; color: #ef4444;">{{ neg_pct_str }}</span></td>
+                            </tr>
+                        </table>
+                        <div style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 5px; background-color: #e2e8f0; display: flex;">
+                            <div style="width: {{ pos_pct }}%; background-color: #10b981; height: 100%;"></div>
+                            <div style="width: {{ neu_pct }}%; background-color: #94a3b8; height: 100%;"></div>
+                            <div style="width: {{ neg_pct }}%; background-color: #ef4444; height: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+
+        <!-- Positive / Negative Summaries -->
+        <div class="two-col" style="margin-top: 15px;">
+            <div class="col-left" style="width: 48%;">
+                <div class="opinion-card" style="border-top: 3px solid #10b981; min-height: 120px; margin-bottom: 0;">
+                    <div class="opinion-title" style="color: #10b981;">✅ Positive Comment Themes</div>
+                    <p style="font-size: 8pt; line-height: 1.4; margin: 0; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ positive_comments_summary }}</p>
+                </div>
+            </div>
+            <div class="col-right" style="width: 48%;">
+                <div class="opinion-card" style="border-top: 3px solid #ef4444; min-height: 120px; margin-bottom: 0;">
+                    <div class="opinion-title" style="color: #ef4444;">❌ Negative Comment Themes</div>
+                    <p style="font-size: 8pt; line-height: 1.4; margin: 0; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ negative_comments_summary }}</p>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Sentiment Insight</div>
+            <p class="insight-text">{{ insight_sentiment_analysis }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 4: CAMPAIGN BRAND MENTIONS
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">04 • Campaign Brand Mentions</div>
+        <div class="section-subtitle">This section tracks and measures audience mentions of the brand name within campaign comments. It categorizes mentions numerically and qualitatively to evaluate how the product integration influenced direct brand perception.</div>
+
+        <div class="two-col">
+            <div class="col-left" style="width: 48%;">
+                <div class="opinion-card" style="border-left: 3px solid #10b981; min-height: 100px;">
+                    <div class="opinion-title" style="color: #10b981; font-size: 8.5pt;">Positive Brand Mentions ({{ brand_pos }})</div>
+                    <p style="font-size: 8pt; line-height: 1.4; margin: 0; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ brand_positive_qualitative }}</p>
+                </div>
+            </div>
+            <div class="col-right" style="width: 48%;">
+                <div class="opinion-card" style="border-left: 3px solid #ef4444; min-height: 100px;">
+                    <div class="opinion-title" style="color: #ef4444; font-size: 8.5pt;">Negative Brand Mentions ({{ brand_neg }})</div>
+                    <p style="font-size: 8pt; line-height: 1.4; margin: 0; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ brand_negative_qualitative }}</p>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+
+        <div class="opinion-card">
+            <div class="opinion-title" style="font-size: 8.5pt;">Exact Brand Mentions Comments</div>
+            <div style="max-height: 250px; overflow: hidden;">
+                {% for c in brand_mentioned_comments|slice:":8" %}
+                <div class="comment-card {% if c.brand_sentiment == 'POS' %}comment-card-pos{% elif c.brand_sentiment == 'NEG' %}comment-card-neg{% endif %}">
+                    <span class="comment-author">@{{ c.author }}</span> 
+                    <span class="text-muted text-xs">({{ c.influencer_name }})</span>
+                    {% if c.brand_sentiment == 'POS' %}
+                        <span class="badge badge-pos" style="font-size: 6pt; padding: 1px 3px; float: right;">Positive</span>
+                    {% elif c.brand_sentiment == 'NEG' %}
+                        <span class="badge badge-neg" style="font-size: 6pt; padding: 1px 3px; float: right;">Negative</span>
+                    {% else %}
+                        <span class="badge badge-neu" style="font-size: 6pt; padding: 1px 3px; float: right;">Neutral</span>
+                    {% endif %}
+                    <p class="comment-text">"{{ c.text }}"</p>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center" style="padding: 20px;">No specific brand mention comments captured.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Brand Mention Insight</div>
+            <p class="insight-text">{{ insight_brand_mentions }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 5: CREATOR PERFORMANCE
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">05 • Creator Performance</div>
+        <div class="section-subtitle">This section highlights individual creator performance, comparing quantitative outputs and qualitative resonance. It identifies the MVP creator who generated the highest engagement velocity and content resonance for the brand.</div>
+
+        {% if charts.creator_ranking %}
+        <div class="chart-box">
+            <img class="chart-img" src="data:image/png;base64,{{ charts.creator_ranking }}" alt="Creator Engagement Ranking">
+            <div class="chart-caption">Figure 3: Creator Campaign Engagement Comparison</div>
+        </div>
+        {% endif %}
+
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 14%;">Creator</th>
+                        <th class="text-center" style="width: 4%;">Posts</th>
+                        <th class="text-right" style="width: 8%;">Followers</th>
+                        <th class="text-right" style="width: 8%;">Views</th>
+                        <th class="text-right" style="width: 8%;">Eng.</th>
+                        <th class="text-right" style="width: 7%;">Likes</th>
+                        <th class="text-right" style="width: 7%;">Comments</th>
+                        <th class="text-right" style="width: 6%;">Shares</th>
+                        <th class="text-right" style="width: 6%;">Saves</th>
+                        <th class="text-right" style="width: 6%;">Reposts</th>
+                        <th class="text-right" style="width: 7%;">ER</th>
+                        <th class="text-right" style="width: 9%;">Activeness</th>
+                        <th class="text-right" style="width: 10%;">Res. Eff.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inf in influencers %}
+                    <tr>
+                        <td style="font-weight: 700; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %};">
+                            {% if inf.sentiment_badge == 'POSITIVE' %}
+                                <span class="score-dot score-dot-green"></span>
+                            {% elif inf.sentiment_badge == 'NEGATIVE' %}
+                                <span class="score-dot score-dot-red"></span>
+                            {% else %}
+                                <span class="score-dot score-dot-amber"></span>
+                            {% endif %}
+                            {{ inf.name }}
+                        </td>
+                        <td class="text-center">{{ inf.posts_count }}</td>
+                        <td class="text-right">{{ inf.followers_compact|default:inf.followers_fmt }}</td>
+                        <td class="text-right">{{ inf.views_compact|default:inf.views_fmt }}</td>
+                        <td class="text-right">{{ inf.engagement_compact|default:inf.engagement_fmt }}</td>
+                        <td class="text-right">{{ inf.likes_compact|default:inf.likes_fmt }}</td>
+                        <td class="text-right">{{ inf.comments_compact|default:inf.comments_fmt }}</td>
+                        <td class="text-right">{{ inf.shares_compact|default:inf.shares_fmt }}</td>
+                        <td class="text-right">{{ inf.saves_compact|default:inf.saves_fmt }}</td>
+                        <td class="text-right">{{ inf.retweets_compact|default:inf.retweets_fmt }}</td>
+                        <td class="text-right">{{ inf.engagement_rate_str }}</td>
+                        <td class="text-right">{{ inf.audience_activeness_str }}</td>
+                        <td class="text-right" style="font-weight: 700; color: {{ campaign.workspace.report_primary_color }};">{{ inf.resonance_efficiency_str }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Creator Insight</div>
+            <p class="insight-text">{{ insight_creator_performance }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 6: CREATOR INSIGHTS (Native vs Campaign Content)
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">06 • Creator Insights (Native vs. Campaign Content)</div>
+        <div class="section-subtitle">This section compares creators' sponsored campaign content against their last ten organic (native) posts. By analyzing views and engagement rate variances, it measures how effectively the sponsored message matched their organic content baseline.</div>
+
+        {% if charts.native_vs_campaign %}
+        <div class="chart-box">
+            <img class="chart-img" src="data:image/png;base64,{{ charts.native_vs_campaign }}" alt="Native vs Campaign Engagement Comparison" style="max-height: 280px;">
+            <div class="chart-caption">Figure 4: Average Sponsored Campaign Engagement vs. Organic Content Baseline</div>
+        </div>
+        {% endif %}
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Native vs. Campaign Insight</div>
+            <p class="insight-text">{{ insight_creator_native_vs_campaign }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 7: CAMPAIGN INTELLIGENCE
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-section" style="margin-bottom: 20px;">
+        <div class="section-header">07 • Campaign Intelligence</div>
+        <div class="section-subtitle">This section uses artificial intelligence to analyze deep audience reactions beyond direct metrics. It provides answers to key strategic questions regarding content formats, hooks, integration feel, drop-offs, and platform nuances.</div>
+
+        <div style="font-size: 8.5pt;">
+            {% if use_llm or campaign_intelligence.q1 %}
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">1. Which content formats are performing best (e.g., tutorials, lifestyle, storytelling, reviews, skits)?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q1 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">2. Which videos drive highest watch time, engagement, and completion, and commonalities?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q2 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">3. Where viewers typically drop off and recurring patterns (e.g. if product appears too early or late)?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q3 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">4. Whether the product integration feels natural or needs a different approach?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q4 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">5. Which creators, hooks, styles, captions, or storytelling deliver the best results?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q5 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">6. Common patterns across lower-performing content?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q6 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 12px; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">7. Platform-specific insights on TikTok, Instagram, X?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q7 }}</p>
+                </div>
+                <div class="opinion-card" style="margin-bottom: 0; padding: 10px 12px;">
+                    <div class="opinion-title" style="font-size: 8pt; margin-bottom: 3px; color: {% if campaign.workspace.report_theme == 'DARK' %}#ffffff{% else %}#1e293b{% endif %}; font-weight: 700;">8. Other observations or recommendations to improve remaining content performance?</div>
+                    <p style="margin: 0; line-height: 1.4; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ campaign_intelligence.q8 }}</p>
+                </div>
+            {% else %}
+                <p class="text-muted text-center" style="padding: 40px; border: 1px dashed {% if campaign.workspace.report_theme == 'DARK' %}#27272a{% else %}#cbd5e1{% endif %}; border-radius: 8px;">
+                    LLM-powered strategic intelligence is currently disabled for this workspace. Enable LLM sentiment analysis in settings to view detailed campaign qualitative intelligence.
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- Section Insight -->
+        <div class="section-insight">
+            <div class="insight-label">Intelligence Insight</div>
+            <p class="insight-text">{{ insight_campaign_intelligence }}</p>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         SECTION 8: RECOMMENDATIONS
+         ==================================================================== -->
+    <div class="page-break"></div>
+    <div class="page-block">
+        <div class="section-header">08 • Strategic Recommendations</div>
+        <div class="section-subtitle">Data-driven actionable insights for future marketing briefings.</div>
+
+        <div style="margin-top: 15px;">
+            {% for rec in recommendations %}
+            <div class="opinion-card" style="border-left: 4px solid {{ campaign.workspace.report_primary_color }}; margin-bottom: 15px;">
+                <div class="opinion-title" style="font-size: 9.5pt; margin-bottom: 5px;">
+                    {% if rec.icon %}{{ rec.icon }}{% else %}💡{% endif %} {{ rec.title }}
+                </div>
+                <p style="font-size: 8.5pt; line-height: 1.5; margin: 0; color: {% if campaign.workspace.report_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ rec.body }}</p>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center" style="padding: 20px;">No recommendations compiled yet.</p>
+            {% endfor %}
+        </div>
+
+        <!-- MVP Creator Highlight -->
+        {% if top_performer %}
+        <div class="opinion-card" style="border: 1px solid #10b981; background-color: {% if campaign.workspace.report_theme == 'DARK' %}#061512{% else %}#f0fdf4{% endif %}; margin-top: 30px;">
+            <div class="opinion-title" style="color: #10b981; font-size: 9pt;">Campaign MVP Creator Spotlight</div>
+            <p style="font-size: 8.5pt; margin: 0; line-height: 1.4;">
+                <strong>{{ top_performer.name }}</strong> achieved the highest resonance efficiency and engagement volume, generating <strong>{{ top_performer.engagement_fmt }}</strong> interactions at a <strong>{{ top_performer.engagement_rate_str }}</strong> content resonance rate. We recommend prioritizing this creator for future ambassador contracts.
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Methodology Block -->
+        <div class="signature-block">
+            <div class="methodology-note">
+                <strong>Methodology & Audit Standards:</strong><br>
+                1. <strong>Net Sentiment Layer</strong> evaluates direct and contextual audience reactions, filtered through region-specific dialects (such as Pidgin, African slang, banter) and classified using local lexicon analysis matched with transformer-based deep learning polarity validation.<br>
+                2. <strong>Audience Activeness</strong> measures viewer engagement intensity, representing views per follower ratio. It tracks active interaction behavior relative to creator scale.<br>
+                3. <strong>Resonance Efficiency (RE)</strong> indicates organic endorsement success, computed by multiplying the Engagement Rate (CR) by the Audience Activeness score to benchmark true content performance beyond simple raw metrics.
+            </div>
+            <div style="font-size: 7.5pt; text-align: center; margin-top: 20px;" class="text-muted">
+                &copy; {{ report_year }} Sentimentri. Confidential Audit Report. All Rights Reserved.
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

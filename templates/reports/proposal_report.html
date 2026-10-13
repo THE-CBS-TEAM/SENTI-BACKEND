@@ -1,0 +1,525 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Campaign Proposal - {{ campaign_name }}</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap");
+
+        @page {
+            size: A4;
+            margin: 20mm 15mm;
+            background-color: {% if workspace.proposal_theme == 'DARK' %}#030303{% else %}#FFFFFF{% endif %};
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: {% if workspace.proposal_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif workspace.proposal_font_style == 'SERIF' %}'Playfair Display', serif{% elif workspace.proposal_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 9pt;
+                color: {% if workspace.proposal_theme == 'DARK' %}#71717a{% else %}#888888{% endif %};
+            }
+            @bottom-left {
+                content: {% if workspace.proposal_show_watermark %}"Sentimentri Executive Proposal & Projections"{% else %}""{% endif %};
+                font-family: {% if workspace.proposal_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif workspace.proposal_font_style == 'SERIF' %}'Playfair Display', serif{% elif workspace.proposal_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 9pt;
+                color: {% if workspace.proposal_theme == 'DARK' %}#71717a{% else %}#888888{% endif %};
+            }
+            {% if workspace.proposal_show_watermark and workspace.proposal_theme == 'DARK' %}
+            @top-right {
+                content: "CONFIDENTIAL";
+                font-family: {% if workspace.proposal_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif workspace.proposal_font_style == 'SERIF' %}'Playfair Display', serif{% elif workspace.proposal_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+                font-size: 8pt;
+                font-weight: bold;
+                letter-spacing: 1.5px;
+                color: #3f3f46;
+            }
+            {% endif %}
+        }
+        body {
+            font-family: {% if workspace.proposal_font_style == 'POPPINS' %}'Poppins', sans-serif{% elif workspace.proposal_font_style == 'SERIF' %}'Playfair Display', serif{% elif workspace.proposal_font_style == 'SANS' %}'Inter', sans-serif{% else %}'Helvetica Neue', Helvetica, Arial, sans-serif{% endif %};
+            color: {% if workspace.proposal_theme == 'DARK' %}#f4f4f5{% else %}#1F2937{% endif %};
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 1.5;
+            background-color: {% if workspace.proposal_theme == 'DARK' %}#030303{% else %}#FFFFFF{% endif %};
+        }
+        .header {
+            border-bottom: 3px solid {{ workspace.proposal_primary_color }};
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .title-area h1 {
+            margin: 0;
+            font-size: 28pt;
+            color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#111827{% endif %};
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .title-area h2 {
+            margin: 5px 0 0 0;
+            font-size: 14pt;
+            color: {{ workspace.proposal_primary_color }};
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .meta-area {
+            text-align: right;
+            font-size: 10pt;
+            color: {% if workspace.proposal_theme == 'DARK' %}#a1a1aa{% else %}#4B5563{% endif %};
+        }
+        .meta-area strong {
+            color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#111827{% endif %};
+        }
+        .section-title {
+            font-size: 14pt;
+            font-weight: 700;
+            color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#111827{% endif %};
+            border-left: 4px solid {{ workspace.proposal_primary_color }};
+            padding-left: 10px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-grid {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 8px 0;
+            margin: 0 0 20px 0;
+        }
+        .kpi-card {
+            background: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#F8FAFC{% endif %};
+            border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %};
+            border-radius: 8px;
+            padding: 12px 6px;
+            text-align: center;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .kpi-label {
+            font-size: 8pt;
+            text-transform: uppercase;
+            color: {% if workspace.proposal_theme == 'DARK' %}#a1a1aa{% else %}#64748B{% endif %};
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .kpi-value {
+            font-size: 15pt;
+            font-weight: 800;
+            color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0F172A{% endif %};
+            margin-top: 6px;
+            white-space: nowrap;
+        }
+        .kpi-sub {
+            color: {{ workspace.proposal_primary_color }};
+            font-size: 7.5pt;
+            margin-top: 4px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .table th {
+            background: {% if workspace.proposal_theme == 'DARK' %}#18181b{% else %}#F1F5F9{% endif %};
+            color: {% if workspace.proposal_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};
+            font-size: 9pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 2px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#CBD5E1{% endif %};
+        }
+        .table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#18181b{% else %}#E2E8F0{% endif %};
+            font-size: 10pt;
+            vertical-align: middle;
+            color: {% if workspace.proposal_theme == 'DARK' %}#e4e4e7{% else %}#1F2937{% endif %};
+        }
+        .table tr:nth-child(even) td {
+            background: {% if workspace.proposal_theme == 'DARK' %}#09090b{% else %}#F8FAFC{% endif %};
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-elite { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+        .badge-strong { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+        .badge-average { background: #FEF9C3; color: #854D0E; border: 1px solid #FDE047; }
+        .badge-below { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+        
+        .score-circle {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 800;
+            font-size: 10pt;
+            color: #FFFFFF;
+        }
+        .score-elite { background: #10B981; }
+        .score-strong { background: #3B82F6; }
+        .score-average { background: #F59E0B; }
+        .score-below { background: #EF4444; }
+
+        .summary-box {
+            background: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#EFF6FF{% endif %};
+            border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#BFDBFE{% endif %};
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#1E3A8A{% endif %};
+        }
+        .summary-text {
+            font-size: 10pt;
+            color: {{ workspace.proposal_primary_color }};
+            margin-top: 4px;
+        }
+        .summary-cost {
+            font-size: 24pt;
+            font-weight: 800;
+            color: {{ workspace.proposal_primary_color }};
+            text-align: right;
+        }
+        .footer-note {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %};
+            font-size: 8.5pt;
+            color: {% if workspace.proposal_theme == 'DARK' %}#71717a{% else %}#64748B{% endif %};
+            text-align: center;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-area">
+            <h1>{{ campaign_name }}</h1>
+            <h2>Stage 1: Client Campaign Proposal</h2>
+        </div>
+        <div class="meta-area">
+            <div><strong>Client / Brand:</strong> {{ brand_name }}</div>
+            <div><strong>Goal:</strong> {{ goal }}</div>
+            <div><strong>Timeline:</strong> {{ start_date }} – {{ end_date }}</div>
+            <div><strong>Date Generated:</strong> {{ generated_at }}</div>
+        </div>
+    </div>
+
+    <div class="section-title">Projected Campaign Impact & ROI Metrics</div>
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-card" width="25%">
+                <div class="kpi-label">Est. Total Reach</div>
+                <div class="kpi-value">{{ projections.summary.estimated_reach|default:"0"|intcomma }}</div>
+                <div class="kpi-sub">Total Followers Across Lineup</div>
+            </td>
+            <td class="kpi-card" width="25%">
+                <div class="kpi-label">Est. Video Views / Impressions</div>
+                <div class="kpi-value">{{ projections.summary.estimated_views|default:"0"|intcomma }}</div>
+                <div class="kpi-sub">AAR: {{ projections.summary.estimated_aar }}%</div>
+            </td>
+            <td class="kpi-card" width="25%">
+                <div class="kpi-label">Est. Total Engagement</div>
+                <div class="kpi-value">{{ projections.summary.estimated_engagement|default:"0"|intcomma }}</div>
+                <div class="kpi-sub">CR: {{ projections.summary.estimated_cr }}%</div>
+            </td>
+            <td class="kpi-card" width="25%">
+                <div class="kpi-label">Engagement Rate</div>
+                <div class="kpi-value">{{ projections.summary.estimated_cr|default:"0" }}%</div>
+                <div class="kpi-sub">Avg Senti Score: {{ projections.summary.avg_senti_score }}/100</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Selected Influencers & Performance Projections</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th width="25%">Creator</th>
+                <th width="12%">Senti Score</th>
+                <th width="13%">Est. Reach</th>
+                <th width="13%">Est. Views</th>
+                <th width="13%">Est. Eng.</th>
+                <th width="12%">Engagement Rate</th>
+                <th width="12%">Fee ({{ currency_code }})</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inf in projections.influencers %}
+            <tr>
+                <td>
+                    <span style="color: {{ inf.sentiment_color|default:'#10B981' }}; font-size: 12pt; line-height: 1; vertical-align: middle; margin-right: 4px;">&#9679;</span>
+                    <strong>{{ inf.display_name }}</strong><br>
+                    <span style="font-size: 8.5pt; color: #64748B; padding-left: 14px; display: inline-block;">
+                        {% if inf.ig_handle %}IG: @{{ inf.ig_handle }} {% endif %}
+                        {% if inf.tiktok_handle %}TT: @{{ inf.tiktok_handle }} {% endif %}
+                        {% if inf.x_handle %}X: @{{ inf.x_handle }}{% endif %}
+                    </span>
+                </td>
+                <td>
+                    {% if inf.senti_score >= 90 %}
+                        <span class="badge badge-elite">{{ inf.senti_score }} • Elite</span>
+                    {% elif inf.senti_score >= 75 %}
+                        <span class="badge badge-strong">{{ inf.senti_score }} • Strong</span>
+                    {% elif inf.senti_score >= 60 %}
+                        <span class="badge badge-average">{{ inf.senti_score }} • Average</span>
+                    {% else %}
+                        <span class="badge badge-below">{{ inf.senti_score }} • Below</span>
+                    {% endif %}
+                </td>
+                <td>{{ inf.estimated_reach|intcomma }}</td>
+                <td>{{ inf.estimated_views|intcomma }}</td>
+                <td>{{ inf.estimated_engagement|intcomma }}</td>
+                <td><strong>{{ inf.estimated_cr }}%</strong></td>
+                <td>{{ currency_symbol }}{{ inf.fee|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #64748B; padding: 20px;">No influencers assigned to this proposal yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-box">
+        <div>
+            <div class="summary-title">Total Proposed Campaign Investment</div>
+            <div class="summary-text">
+                Cost Per Engagement (CPE): <strong>{{ currency_symbol }}{{ projections.summary.cost_per_engagement|intcomma }}</strong> &nbsp;|&nbsp; 
+                Cost Per Mille Views (CPM): <strong>{{ currency_symbol }}{{ projections.summary.cost_per_mille_views|intcomma }}</strong>
+            </div>
+        </div>
+        <div class="summary-cost">
+            {{ currency_symbol }}{{ projections.summary.total_budget_required|intcomma }}
+        </div>
+    </div>
+
+    <!-- Influencer Validation Section -->
+    {% for inf in projections.influencers %}
+    <div class="page-break"></div>
+    
+    <div class="section-title">Influencer Validation</div>
+
+    <!-- 1. Creator Hero Header Card -->
+    <div style="background-color: {% if workspace.proposal_theme == 'DARK' %}#071d15{% else %}#064e3b{% endif %}; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#1b4332{% else %}#047857{% endif %}; border-radius: 8px; padding: 18px 20px; margin-bottom: 20px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <!-- Left: Creator Details -->
+                <td style="width: 48%; vertical-align: middle;">
+                    <div style="font-size: 20pt; font-weight: 800; color: #ffffff; line-height: 1.1; margin-bottom: 4px;">
+                        {{ inf.display_name }}
+                    </div>
+                    <div style="font-size: 8pt; color: #a7f3d0; margin-bottom: 4px;">
+                        {% if inf.ig_handle %}@{{ inf.ig_handle }} (Instagram){% endif %}
+                        {% if inf.x_handle %}{% if inf.ig_handle %} | {% endif %}@{{ inf.x_handle }} (X/Twitter){% endif %}
+                        {% if inf.tiktok_handle %}{% if inf.ig_handle or inf.x_handle %} | {% endif %}@{{ inf.tiktok_handle }} (TikTok){% endif %}
+                    </div>
+                    <div style="font-size: 8.5pt; font-weight: 600; color: #d1fae5;">
+                        {{ inf.creator_classification|default:inf.creator_tier }}
+                    </div>
+                </td>
+
+                <!-- Right: 4 Metric Columns -->
+                <td style="width: 52%; vertical-align: middle;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                        <tr>
+                            <!-- Metric 1: Senti Score -->
+                            <td style="width: 25%; padding: 0 4px; vertical-align: top; border-right: 1px solid rgba(255,255,255,0.15);">
+                                <div style="font-size: 6.8pt; text-transform: uppercase; font-weight: 700; color: #a7f3d0; letter-spacing: 0.3px;">SENTI SCORE</div>
+                                <div style="font-size: 15pt; font-weight: 800; color: #ffffff; margin-top: 2px;">{{ inf.senti_score }}/100</div>
+                                <div style="font-size: 6.8pt; color: #d1fae5; margin-top: 1px; text-transform: capitalize;">{{ inf.senti_rating }}</div>
+                            </td>
+
+                            <!-- Metric 2: CR -->
+                            <td style="width: 25%; padding: 0 4px; vertical-align: top; border-right: 1px solid rgba(255,255,255,0.15);">
+                                <div style="font-size: 6.8pt; text-transform: uppercase; font-weight: 700; color: #a7f3d0; letter-spacing: 0.3px;">CR</div>
+                                <div style="font-size: 15pt; font-weight: 800; color: #ffffff; margin-top: 2px;">{{ inf.estimated_cr }}%</div>
+                                <div style="font-size: 6.8pt; color: #d1fae5; margin-top: 1px;">Eng / Views</div>
+                            </td>
+
+                            <!-- Metric 3: AAR -->
+                            <td style="width: 25%; padding: 0 4px; vertical-align: top; border-right: 1px solid rgba(255,255,255,0.15);">
+                                <div style="font-size: 6.8pt; text-transform: uppercase; font-weight: 700; color: #a7f3d0; letter-spacing: 0.3px;">AAR</div>
+                                <div style="font-size: 15pt; font-weight: 800; color: #ffffff; margin-top: 2px;">{{ inf.estimated_aar }}%</div>
+                                <div style="font-size: 6.8pt; color: #d1fae5; margin-top: 1px;">Views / Followers</div>
+                            </td>
+
+                            <!-- Metric 4: RE -->
+                            <td style="width: 25%; padding: 0 4px; vertical-align: top;">
+                                <div style="font-size: 6.8pt; text-transform: uppercase; font-weight: 700; color: #a7f3d0; letter-spacing: 0.3px;">RE</div>
+                                <div style="font-size: 15pt; font-weight: 800; color: #ffffff; margin-top: 2px;">{{ inf.estimated_re }}%</div>
+                                <div style="font-size: 6.8pt; color: #d1fae5; margin-top: 1px;">AAR x CR</div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 2. Overall Sentiment Summary -->
+    <div style="margin-bottom: 20px;">
+        <div style="font-size: 10.5pt; font-weight: 700; color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %}; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">
+            Overall Sentiment Summary
+        </div>
+        <div style="background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %}; border-radius: 6px; padding: 12px 14px; font-size: 8.5pt; line-height: 1.5; color: {% if workspace.proposal_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};">
+            {{ inf.sentiment_summary }}
+        </div>
+    </div>
+
+    <!-- 3. Sentiment Breakdown Table -->
+    <div style="margin-bottom: 22px;">
+        <table style="width: 100%; border-collapse: collapse; border-radius: 6px; overflow: hidden; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};">
+            <thead>
+                <tr style="background-color: {% if workspace.proposal_theme == 'DARK' %}#18181b{% else %}#f1f5f9{% endif %}; border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#cbd5e1{% endif %};">
+                    <th style="padding: 8px 12px; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; color: {% if workspace.proposal_theme == 'DARK' %}#a1a1aa{% else %}#475569{% endif %}; width: 25%; text-align: left;">Metric</th>
+                    <th style="padding: 8px 10px; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; color: {% if workspace.proposal_theme == 'DARK' %}#a1a1aa{% else %}#475569{% endif %}; width: 12%; text-align: center;">Value</th>
+                    <th style="padding: 8px 12px; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; color: {% if workspace.proposal_theme == 'DARK' %}#a1a1aa{% else %}#475569{% endif %}; width: 63%; text-align: left;">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Positive sentiment row -->
+                <tr style="background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#ffffff{% endif %}; border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};">
+                    <td style="padding: 10px 12px; font-size: 8.5pt; font-weight: 700; color: #10b981;">Positive sentiment</td>
+                    <td style="padding: 10px 10px; font-size: 9pt; font-weight: 800; color: #10b981; text-align: center;">{{ inf.pos_pct }}%</td>
+                    <td style="padding: 10px 12px; font-size: 8pt; line-height: 1.4; color: {% if workspace.proposal_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ inf.pos_description }}</td>
+                </tr>
+                <!-- Neutral sentiment row -->
+                <tr style="background-color: {% if workspace.proposal_theme == 'DARK' %}#09090b{% else %}#f8fafc{% endif %}; border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};">
+                    <td style="padding: 10px 12px; font-size: 8.5pt; font-weight: 700; color: #94a3b8;">Neutral sentiment</td>
+                    <td style="padding: 10px 10px; font-size: 9pt; font-weight: 800; color: #94a3b8; text-align: center;">{{ inf.neu_pct }}%</td>
+                    <td style="padding: 10px 12px; font-size: 8pt; line-height: 1.4; color: {% if workspace.proposal_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ inf.neu_description }}</td>
+                </tr>
+                <!-- Negative sentiment row -->
+                <tr style="background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#ffffff{% endif %}; border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#e2e8f0{% endif %};">
+                    <td style="padding: 10px 12px; font-size: 8.5pt; font-weight: 700; color: #ef4444;">Negative sentiment</td>
+                    <td style="padding: 10px 10px; font-size: 9pt; font-weight: 800; color: #ef4444; text-align: center;">{{ inf.neg_pct }}%</td>
+                    <td style="padding: 10px 12px; font-size: 8pt; line-height: 1.4; color: {% if workspace.proposal_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ inf.neg_description }}</td>
+                </tr>
+                <!-- Net Sentiment Score row -->
+                <tr style="background-color: {% if workspace.proposal_theme == 'DARK' %}#09090b{% else %}#f8fafc{% endif %};">
+                    <td style="padding: 10px 12px; font-size: 8.5pt; font-weight: 700; color: {{ workspace.proposal_primary_color }};">Net Sentiment Score</td>
+                    <td style="padding: 10px 10px; font-size: 9.5pt; font-weight: 800; color: {% if inf.net_sentiment >= 0 %}#10b981{% else %}#ef4444{% endif %}; text-align: center;">{{ inf.net_sentiment_str }}</td>
+                    <td style="padding: 10px 12px; font-size: 8pt; line-height: 1.4; color: {% if workspace.proposal_theme == 'DARK' %}#d4d4d8{% else %}#475569{% endif %};">{{ inf.net_sentiment_description }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Audience Comments Section -->
+    <div>
+        <div style="font-size: 10.5pt; font-weight: 700; color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0f172a{% endif %}; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.3px;">
+            Audience Comments
+        </div>
+
+        <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 10px 0; margin: 0 0 15px 0;">
+            <tr>
+                <!-- Positive Comments Column -->
+                <td style="width: 50%; vertical-align: top; padding: 0;">
+                    <div style="background-color: #064e3b; color: #a7f3d0; padding: 6px 12px; font-size: 7.8pt; font-weight: 700; text-transform: uppercase; border-radius: 6px 6px 0 0; letter-spacing: 0.5px;">
+                        POSITIVE COMMENTS
+                    </div>
+                    <div style="border: 1px solid #059669; border-top: none; border-radius: 0 0 6px 6px; padding: 8px 10px; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f0fdf4{% endif %};">
+                        {% for comment in inf.positive_comments|slice:":5" %}
+                        <div style="margin-bottom: 8px; {% if not forloop.last %}border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#18181b{% else %}#dcfce7{% endif %}; padding-bottom: 6px;{% endif %}">
+                            <span style="font-weight: 700; font-size: 8pt; color: #10b981;">@{{ comment.author|cut:"@" }}</span><br>
+                            <span style="font-size: 7.8pt; line-height: 1.35; font-style: italic; color: {% if workspace.proposal_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};">"{{ comment.text }}"</span>
+                        </div>
+                        {% empty %}
+                        <div style="font-size: 8pt; color: #94a3b8; font-style: italic; padding: 12px; text-align: center;">No comments for now (scraping ongoing)</div>
+                        {% endfor %}
+                    </div>
+                </td>
+
+                <!-- Negative Comments Column -->
+                <td style="width: 50%; vertical-align: top; padding: 0;">
+                    <div style="background-color: #7f1d1d; color: #fecaca; padding: 6px 12px; font-size: 7.8pt; font-weight: 700; text-transform: uppercase; border-radius: 6px 6px 0 0; letter-spacing: 0.5px;">
+                        NEGATIVE COMMENTS
+                    </div>
+                    <div style="border: 1px solid #dc2626; border-top: none; border-radius: 0 0 6px 6px; padding: 8px 10px; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#fef2f2{% endif %};">
+                        {% for comment in inf.negative_comments|slice:":5" %}
+                        <div style="margin-bottom: 8px; {% if not forloop.last %}border-bottom: 1px solid {% if workspace.proposal_theme == 'DARK' %}#18181b{% else %}#fee2e2{% endif %}; padding-bottom: 6px;{% endif %}">
+                            <span style="font-weight: 700; font-size: 8pt; color: #ef4444;">@{{ comment.author|cut:"@" }}</span><br>
+                            <span style="font-size: 7.8pt; line-height: 1.35; font-style: italic; color: {% if workspace.proposal_theme == 'DARK' %}#e4e4e7{% else %}#334155{% endif %};">"{{ comment.text }}"</span>
+                        </div>
+                        {% empty %}
+                        <div style="font-size: 8pt; color: #94a3b8; font-style: italic; padding: 12px; text-align: center;">No comments for now (scraping ongoing)</div>
+                        {% endfor %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endfor %}
+
+    <!-- Charts Page -->
+    {% if charts %}
+    <div class="page-break"></div>
+    <div class="section-title">Projected Proposal Charts & Analytics</div>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <tr>
+            {% if charts.budget_breakdown %}
+            <td style="width: 50%; text-align: center; padding: 10px; vertical-align: top;">
+                <h4 style="color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0F172A{% endif %}; margin-top: 0; font-size: 10pt; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">Budget Allocation</h4>
+                <img src="data:image/png;base64,{{ charts.budget_breakdown }}" style="max-width: 100%; height: auto; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %}; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border-radius: 8px;" alt="Fee Allocation">
+            </td>
+            {% endif %}
+            
+            {% if charts.sentiment_donut %}
+            <td style="width: 50%; text-align: center; padding: 10px; vertical-align: top;">
+                <h4 style="color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0F172A{% endif %}; margin-top: 0; font-size: 10pt; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">Projected Sentiment Ratio</h4>
+                <img src="data:image/png;base64,{{ charts.sentiment_donut }}" style="max-width: 100%; height: auto; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %}; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border-radius: 8px;" alt="Sentiment Breakdown">
+            </td>
+            {% endif %}
+        </tr>
+    </table>
+    
+    {% if charts.sentiment_bars %}
+    <div style="text-align: center; margin-top: 25px; page-break-inside: avoid;">
+        <h4 style="color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0F172A{% endif %}; margin-top: 0; font-size: 10pt; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">Creator Audience Sentiment Split</h4>
+        <img src="data:image/png;base64,{{ charts.sentiment_bars }}" style="max-width: 90%; height: auto; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %}; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border-radius: 8px; padding: 5px;" alt="Creator Sentiment Ratios">
+    </div>
+    {% endif %}
+
+    {% if charts.creator_ranking %}
+    <div style="text-align: center; margin-top: 25px; page-break-inside: avoid;">
+        <h4 style="color: {% if workspace.proposal_theme == 'DARK' %}#ffffff{% else %}#0F172A{% endif %}; margin-top: 0; font-size: 10pt; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">Creator Comparison ranking</h4>
+        <img src="data:image/png;base64,{{ charts.creator_ranking }}" style="max-width: 90%; height: auto; border: 1px solid {% if workspace.proposal_theme == 'DARK' %}#27272a{% else %}#E2E8F0{% endif %}; background-color: {% if workspace.proposal_theme == 'DARK' %}#0c0c0e{% else %}#f8fafc{% endif %}; border-radius: 8px; padding: 5px;" alt="Creator Ranking">
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="footer-note">
+        This document is an interactive predictive proposal generated by Sentimentri's scoring algorithm. 
+        Upon client sign-off, the campaign will transition immediately to Stage 2 (Execution), enabling live real-time post tracking, comment lexicon classification, and audience resonance monitoring.
+    </div>
+
+</body>
+</html>

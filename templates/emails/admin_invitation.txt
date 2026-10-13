@@ -1,0 +1,17 @@
+{% autoescape off %}
+You've been invited to join Sentimentri Platform!
+
+Hi there,
+
+{{ inviter_name }} has invited you to join the Sentimentri admin platform as {{ role }}.
+
+Click the link below to accept your invitation, set your password, and gain access:
+{{ accept_url }}
+
+This invitation link expires in {{ expires_in_hours }} hours.
+
+If you didn't expect this invitation, please ignore this email.
+
+— The Sentimentri Team
+{{ frontend_url }}
+{% endautoescape %}

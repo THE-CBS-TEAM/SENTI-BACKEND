@@ -1,0 +1,3 @@
+-r base.txt
+# Add any production-only dependencies here
+django-storages[google]>=1.14

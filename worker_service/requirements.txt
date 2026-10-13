@@ -1,0 +1,16 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+celery[redis]>=5.4.0
+redis>=5.2.0
+sqlalchemy>=2.0.36
+psycopg2-binary>=2.9.10
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+httpx>=0.28.0
+requests>=2.32.0
+python-dateutil>=2.9.0
+nltk>=3.9.1
+weasyprint>=63.0
+matplotlib>=3.9.0
+boto3>=1.35.0
+pytest>=8.0.0

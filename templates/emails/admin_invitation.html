@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Invitation</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f5; margin: 0; padding: 0; }
+    .wrapper { max-width: 560px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .header { background: #0f172a; padding: 28px 32px; }
+    .header h1 { color: #fff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.3px; }
+    .header span { color: #f59e0b; }
+    .body { padding: 32px; }
+    .body p { color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
+    .role-badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+    .cta { display: block; margin: 28px 0; text-align: center; }
+    .cta a { background: #0f172a; color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 8px; display: inline-block; }
+    .note { color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .footer { background: #f9fafb; padding: 20px 32px; border-top: 1px solid #e5e7eb; }
+    .footer p { color: #9ca3af; font-size: 12px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>Sentri<span>metri</span> &mdash; Admin Platform</h1>
+    </div>
+    <div class="body">
+      <p>Hi there,</p>
+      <p>
+        <strong>{{ inviter_name }}</strong> has invited you to join the Sentimentri admin platform as
+        <span class="role-badge">{{ role }}</span>.
+      </p>
+      <p>Click the button below to accept the invitation, set your password, and access the dashboard:</p>
+      <div class="cta">
+        <a href="{{ accept_url }}">Accept & Set Up Account</a>
+      </div>
+      <p class="note">
+        This invitation expires in <strong>{{ expires_in_hours }} hours</strong>.
+        If you weren't expecting this, please disregard this email.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© Sentimentri &nbsp;·&nbsp; <a href="{{ frontend_url }}" style="color:#6366f1;">sentimentri.com</a></p>
+    </div>
+  </div>
+</body>
+</html>
